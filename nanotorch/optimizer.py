@@ -1,16 +1,56 @@
 class SGDOptimizer:
-    def __init__(self, parameters, lr):
-        self.parameters = parameters
+    def __init__(self, layers, lr=0.01):
+        """
+        layers: list of layers (LinearLayer, RNNLayer, etc.)
+        lr: learning rate
+        """
+        self.layers = layers
         self.lr = lr
 
-    def zero_grad(self):
-        for layer in self.parameters:
-            layer.zero_grad()
-        
     def step(self):
-        for layer in self.parameters:
-            assert layer.weight.data.shape == layer.weight.grad.shape
-            assert layer.bias.data.shape == layer.bias.grad.shape
+        """
+        Update all parameters using SGD
+        """
+        for layer in self.layers:
 
-            layer.weight.data = layer.weight.data - self.lr * layer.weight.grad
-            layer.bias.data = layer.bias.data - self.lr * layer.bias.grad
+            # Generic parameter access (PyTorch-style)
+            if hasattr(layer, "parameters"):
+                params = layer.parameters()
+            else:
+                # Fallback for very simple layers
+                params = []
+                if hasattr(layer, "weight"):
+                    params.append(layer.weight)
+                if hasattr(layer, "bias"):
+                    params.append(layer.bias)
+
+            for p in params:
+                # Safety checks
+                if p.grad is None:
+                    continue
+
+                assert p.data.shape == p.grad.shape, (
+                    f"Gradient shape mismatch: "
+                    f"{p.data.shape} vs {p.grad.shape}"
+                )
+
+                # SGD update
+                p.data -= self.lr * p.grad
+
+    def zero_grad(self):
+        """
+        Reset gradients to zero
+        """
+        for layer in self.layers:
+
+            if hasattr(layer, "parameters"):
+                params = layer.parameters()
+            else:
+                params = []
+                if hasattr(layer, "weight"):
+                    params.append(layer.weight)
+                if hasattr(layer, "bias"):
+                    params.append(layer.bias)
+
+            for p in params:
+                p.grad = 0
