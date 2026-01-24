@@ -1,32 +1,24 @@
 from sklearn.datasets import fetch_california_housing
 from sklearn.utils import shuffle
-from nanotorch.nn import LinearLayer , L1Loss 
+from nanotorch.nn import LinearLayer , L1Loss , BaseModel
 from nanotorch.optimizer import SGDOptimizer
 from nanotorch.tensor import Tensor
 import numpy as np
 from tqdm import tqdm
 
-class Model:
+class Model(BaseModel):
     def __init__(self, input_size, output_size, hidden_size):
         self.layer_1 = LinearLayer(input_size,hidden_size)
         self.layer_2 = LinearLayer(hidden_size,hidden_size)
         self.layer_3 = LinearLayer(hidden_size,hidden_size)
         self.layer_4 = LinearLayer(hidden_size,output_size)
     
-    def __call__(self, x):
-        return self.forward(x)
-
     def forward(self, x):
         output = self.layer_1(x).relu()
         output = self.layer_2(output).relu()
         output = self.layer_3(output).relu()
         output = self.layer_4(output)
         return output
-
-    def parameters(self):
-        return [self.layer_1, self.layer_2, self.layer_3,  self.layer_4]
-
-
 
 if __name__ == "__main__":
     # Load California housing dataset

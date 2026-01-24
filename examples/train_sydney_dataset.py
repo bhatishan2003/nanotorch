@@ -3,7 +3,7 @@ import pandas as pd
 from tqdm import tqdm
 
 from nanotorch.tensor import Tensor
-from nanotorch.nn import LinearLayer, MSELoss, RNNLayer
+from nanotorch.nn import LinearLayer, MSELoss, RNNLayer, BaseModel
 from nanotorch.optimizer import SGDOptimizer
 import matplotlib.pyplot as plt
 
@@ -21,25 +21,21 @@ def create_sequences(data, seq_len):
 # -------------------------------
 # RNN Model
 # -------------------------------
-class RNNModel:
+class RNNModel(BaseModel):
     def __init__(self, input_size, hidden_size, output_size):
+        super().__init__()
         self.rnn = RNNLayer(input_size, hidden_size)
         self.fc = LinearLayer(hidden_size, output_size)
         self.hidden_size = hidden_size
 
-    def __call__(self, x):
-        return self.forward(x)
-
     def forward(self, x):
         batch_size, seq_len, _ = x.shape()
         hidden_state = Tensor(np.zeros((batch_size, self.hidden_size)))
+
         for t in range(seq_len):
-            hidden_state = self.rnn(x[:,t,:], hidden_state)
+            hidden_state = self.rnn(x[:, t, :], hidden_state)
+
         return self.fc(hidden_state)
-
-    def parameters(self):
-        return [self.rnn, self.fc]
-
 # -------------------------------
 # Main
 # -------------------------------

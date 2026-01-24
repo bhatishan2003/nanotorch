@@ -1,22 +1,54 @@
 from .tensor import Tensor
 import numpy as np
+from abc import ABC, abstractmethod
 
-class LinearLayer:
+from abc import ABC, abstractmethod
+
+class BaseLayer(ABC):
+    def __init__(self):
+        super().__init__()
+
+    @abstractmethod
+    def forward(self, *args, **kwargs):
+        raise NotImplementedError
+
+    def __call__(self, *args, **kwargs):
+        return self.forward(*args, **kwargs)
+
+    def parameters(self):
+        """Collect direct Tensor parameters"""
+        params = []
+
+        for value in self.__dict__.values():
+            if isinstance(value, Tensor):
+                params.append(value)
+
+            elif isinstance(value, (list, tuple)):
+                for item in value:
+                    if isinstance(item, Tensor):
+                        params.append(item)
+
+            elif isinstance(value, dict):
+                for item in value.values():
+                    if isinstance(item, Tensor):
+                        params.append(item)
+
+        return params
+
+    def zero_grad(self):
+        for param in self.parameters():
+            param.zero_grad()
+        
+class LinearLayer(BaseLayer):
     def __init__(self, input_size, output_size):
         self.input_size = input_size
         self.output_size = output_size
         self.weight = Tensor(np.random.rand(input_size, output_size))
         self.bias = Tensor(np.random.randn(1, output_size))
-    
-    def __call__(self, x):
-        return self.forward(x)
 
     def forward(self, x):
         return (x @ self.weight) + (Tensor(np.ones((x.shape()[0],1))) @ self.bias)
     
-    def zero_grad(self):
-        self.weight.zero_grad()
-        self.bias.zero_grad()
 
 class MSELoss:
     def __init__(self):
@@ -37,7 +69,7 @@ class L1Loss:
 
     def forward(self, y_true, y_pred):
         return (y_true - y_pred).abs().mean()
-class RNNLayer:
+class RNNLayer(BaseLayer):
     """
     Vanilla RNN (many-to-one)
     Matches: nn.RNN(batch_first=True) + last timestep
@@ -54,9 +86,6 @@ class RNNLayer:
         self.bias_h = Tensor(np.zeros((hidden_size)))
 
 
-    def __call__(self, x, hidden_state):
-        return self.forward(x, hidden_state)
-
     def forward(self,x,hidden_state):
         out_1, out_2 = x @ self.weight_x , hidden_state @ self.weight_h 
         for i in range(x.shape()[0]):
@@ -66,10 +95,35 @@ class RNNLayer:
         
         return (out_1 + out_2).tanh()
 
+from abc import ABC, abstractmethod
 
-    def zero_grad(self):
-        self.weight_x.zero_grad()
-        self.weight_h.zero_grad()
-        self.bias_x.zero_grad()
-        self.bias_h.zero_grad()
+class BaseModel(ABC):
+    def __init__(self):
+        super().__init__()
 
+    @abstractmethod
+    def forward(self, *args, **kwargs):
+        pass
+
+    def __call__(self, *args, **kwargs):
+        return self.forward(*args, **kwargs)
+
+    def parameters(self):
+        """Collect parameters from direct child layers"""
+        params = []
+
+        for value in self.__dict__.values():
+            if isinstance(value, BaseLayer):
+                params.extend(value.parameters())
+
+            elif isinstance(value, (list, tuple)):
+                for item in value:
+                    if isinstance(item, BaseLayer):
+                        params.extend(item.parameters())
+
+            elif isinstance(value, dict):
+                for item in value.values():
+                    if isinstance(item, BaseLayer):
+                        params.extend(item.parameters())
+
+        return params
