@@ -5,7 +5,7 @@ from tqdm import tqdm
 from nanotorch.tensor import Tensor
 from nanotorch.nn import LinearLayer, MSELoss, RNNLayer
 from nanotorch.optimizer import SGDOptimizer
-
+import matplotlib.pyplot as plt
 
 # -------------------------------
 # Dataset utilities
@@ -25,18 +25,20 @@ class RNNModel:
     def __init__(self, input_size, hidden_size, output_size):
         self.rnn = RNNLayer(input_size, hidden_size)
         self.fc = LinearLayer(hidden_size, output_size)
+        self.hidden_size = hidden_size
 
     def __call__(self, x):
         return self.forward(x)
 
     def forward(self, x):
-        h_last = self.rnn(x)      # (batch, hidden)
-        out = self.fc(h_last)    # (batch, output)
-        return out
+        batch_size, seq_len, _ = x.shape()
+        hidden_state = Tensor(np.zeros((batch_size, self.hidden_size)))
+        for t in range(seq_len):
+            hidden_state = self.rnn(x[:,t,:], hidden_state)
+        return self.fc(hidden_state)
 
     def parameters(self):
         return [self.rnn, self.fc]
-
 
 # -------------------------------
 # Main
@@ -44,7 +46,8 @@ class RNNModel:
 if __name__ == "__main__":
 
     # Load Sydney temperature dataset
-    df = pd.read_csv("datasets/daily-max-temperatures.csv")
+    dataset_url = "https://raw.githubusercontent.com/jbrownlee/Datasets/refs/heads/master/daily-max-temperatures.csv"
+    df = pd.read_csv(dataset_url)
     temps = df["Temperature"].values.reshape(-1, 1)
 
     # Normalize
@@ -53,7 +56,7 @@ if __name__ == "__main__":
     # Hyperparameters
     seq_len = 30
     batch_size = 32
-    num_epochs = 20
+    num_epochs = 100
     hidden_size = 64
     lr = 0.001
 
@@ -73,6 +76,7 @@ if __name__ == "__main__":
     # -------------------------------
     # Training loop
     # -------------------------------
+    epoch_losses = []
     for epoch in range(num_epochs):
 
         epoch_loss = 0.0
@@ -85,19 +89,16 @@ if __name__ == "__main__":
 
             for batch_i in range(num_batches):
 
-                # Reset hidden state (IMPORTANT for RNNs)
-                model.rnn.h = None
-
-                xb = Tensor(
+                batch_x = Tensor(
                     X_train[batch_i * batch_size : (batch_i + 1) * batch_size]
                 )
-                yb = Tensor(
+                batch_y = Tensor(
                     y_train[batch_i * batch_size : (batch_i + 1) * batch_size]
                 )
 
                 # Forward
-                preds = model(xb)
-                loss = criterion(yb, preds)
+                preds = model(batch_x)
+                loss = criterion(batch_y, preds)
 
                 # Backward
                 optimizer.zero_grad()
@@ -109,4 +110,17 @@ if __name__ == "__main__":
                 pbar.set_postfix(loss=f"{loss.data:.6f}")
 
         epoch_loss /= num_batches
+        epoch_losses.append(epoch_loss)
         print(f"Epoch {epoch+1}/{num_epochs} | Avg Loss: {epoch_loss:.6f}")
+
+
+    for category_name, category_data in [("Train", epoch_losses)]:
+        plt.figure(figsize=(8, 5))
+        plt.plot(category_data, label="RNN model")
+        plt.xlabel("Epoch")
+        plt.ylabel("MSE Loss")
+        plt.title(category_name + " Loss Comparison")
+        plt.legend()
+        plt.grid(True)
+        plt.savefig(category_name.lower() + "_loss_comparison.png")
+        plt.close()

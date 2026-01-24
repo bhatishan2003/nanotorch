@@ -5,6 +5,16 @@ class Tensor:
         self.data = data
         self.grad = None
 
+    def __getitem__(self, idx):
+        return Tensor(self.data[idx])
+
+    def __setitem__(self, idx, value):
+        if isinstance(value, Tensor):
+            self.data[idx] = value.data
+        else:
+            self.data[idx] = value
+
+
     def __add__(self, other):
         return AddTensor(self, other)
 
@@ -61,6 +71,9 @@ class Tensor:
 
     def relu(self):
         return ReluTensor(self)
+    
+    def tanh(self):
+        return TanhTensor(self)
 
     def abs(self):
         return AbsTensor(self)
@@ -117,6 +130,22 @@ class ReluTensor(Tensor):
         assert x_grad.shape == self._x.data.shape
         # print("Backward of relu",self.data,x_grad)
         self._x.backward(x_grad)
+
+class TanhTensor(Tensor):
+    def __init__(self, x):
+        data = np.tanh(x.data)
+        super().__init__(data)
+        self._x = x
+
+    def backward(self, grad=None):
+        if grad is None:
+            grad = np.ones_like(self.data)
+
+        x_grad = grad * (1 - self.data ** 2)
+        assert x_grad.shape == self._x.data.shape
+
+        self._x.backward(x_grad)
+
 
 
 class MatMulTensor(Tensor):

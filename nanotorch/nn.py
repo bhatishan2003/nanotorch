@@ -47,33 +47,29 @@ class RNNLayer:
         self.hidden_size = hidden_size
 
         # x_t → h_t
-        self.Wx = Tensor(np.random.randn(input_size, hidden_size) * 0.01)
+        self.weight_x = Tensor(np.random.randn(input_size, hidden_size) * 0.01)
         # h_{t-1} → h_t
-        self.Wh = Tensor(np.random.randn(hidden_size, hidden_size) * 0.01)
-        self.bias = Tensor(np.zeros((1, hidden_size)))
+        self.weight_h = Tensor(np.random.randn(hidden_size, hidden_size) * 0.01)
+        self.bias_x = Tensor(np.zeros((hidden_size)))
+        self.bias_h = Tensor(np.zeros((hidden_size)))
 
-    def __call__(self, x, h0=None):
-        return self.forward(x, h0)
 
-    def forward(self, x, h0=None):
-        batch_size, seq_len, _ = x.shape()
+    def __call__(self, x, hidden_state):
+        return self.forward(x, hidden_state)
 
-        if h0 is None:
-            h_t = Tensor(np.zeros((batch_size, self.hidden_size)))
-        else:
-            h_t = h0
+    def forward(self,x,hidden_state):
+        out_1, out_2 = x @ self.weight_x , hidden_state @ self.weight_h 
+        for i in range(x.shape()[0]):
+            out_1[i] = out_1[i] + self.bias_x
+            out_2[i] = out_2[i] + self.bias_h
 
-        ones = Tensor(np.ones((batch_size, 1)))
+        
+        return (out_1 + out_2).tanh()
 
-        for t in range(seq_len):
-            x_t = Tensor(x.data[:, t, :])
-
-            bias_expanded = ones @ self.bias
-            h_t = (x_t @ self.Wx + h_t @ self.Wh + bias_expanded).relu()
-
-        return h_t
 
     def zero_grad(self):
-        self.Wx.zero_grad()
-        self.Wh.zero_grad()
-        self.bias.zero_grad()
+        self.weight_x.zero_grad()
+        self.weight_h.zero_grad()
+        self.bias_x.zero_grad()
+        self.bias_h.zero_grad()
+

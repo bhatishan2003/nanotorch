@@ -3,3 +3,4 @@ ruff
 scikit-learn
 tqdm
 pandas
+matplotlib
