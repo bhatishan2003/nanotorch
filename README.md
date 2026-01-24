@@ -4,10 +4,37 @@
 
 The goal is to **learn**:
 
--   Automatic differentiation
--   Backpropagation
--   How neural networks are built from scratch
--   How frameworks like PyTorch work internally
+- Automatic differentiation
+- Backpropagation
+- How neural networks are built from scratch
+- How frameworks like PyTorch work internally
+
+## Features
+
+- **Layers**
+    - ✅ Linear Layer
+    - ✅ Vanilla Recurrent (RNN) Layer
+    - ⬜ LSTM Layer
+    - ⬜ GRU Layer
+    - ⬜ Convolutional (CNN) Layer
+    - ⬜ Transformer-based Layer
+
+- **Optimizers**
+    - ✅ Stochastic Gradient Descent (SGD)
+    - ⬜ Adam
+    - ⬜ RMSProp
+    - ⬜ Adagrad
+
+- **Loss Functions**
+    - ✅ Mean Squared Error (MSE) Loss
+    - ⬜ Mean Absolute Error (MAE)
+    - ⬜ Cross-Entropy Loss
+    - ⬜ Huber Loss
+
+- **Training Utilities**
+    - ⬜ Learning Rate Scheduler
+    - ⬜ Gradient Clipping
+    - ⬜ Early Stopping
 
 ## 📦 Installation
 
@@ -67,15 +94,14 @@ print("dz/dx =", x.grad)
 
 ### Training on the California Housing Dataset
 
-The `examples/train_california_dataset.py` script demonstrates how to use **NanoTorch** to train a simple neural network on a real-world regression dataset.
-
+The `examples/train_california_dataset.py` script demonstrates how to use **NanoTorch** to train a simple neural network on a real-world regression dataset(For Linear Netowrk).
 This example covers:
 
--   Loading a real dataset
--   Forward pass using NanoTorch tensors
--   L1 Loss
--   Automatic backpropagation
--   Parameter updates with SGD
+- Loading a real dataset
+- Forward pass using NanoTorch tensors
+- L1 Loss
+- Automatic backpropagation
+- Parameter updates with SGD
 
 ### ▶️ How to Run
 
@@ -106,6 +132,22 @@ Epoch #17| Epoch Loss: 1.38 | Batch: 100%|████████████�
 Epoch #18| Epoch Loss: 1.38 | Batch: 100%|█████████████████████████████████| 81/81 [00:00<00:00, 385.59it/s]
 Epoch #19| Epoch Loss: 1.37 | Batch: 100%|█████████████████████████████████| 81/81 [00:00<00:00, 549.88it/s]
 Epoch #20| Epoch Loss: 1.37 | Batch: 100%|█████████████████████████████████| 81/81 [00:00<00:00, 982.30it/s]
+```
+
+### Training on the Sydney Temperature Dataset
+
+The `examples/train_sydney_dataset.py` script demonstrates how to use **NanoTorch** to train a Recurrent neural network on a real-world time-series dataset.
+
+```bash
+python examples/train_sydney_dataset.py
+```
+
+```bash
+Epoch 1/100: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████| 91/91 [00:01<00:00, 46.43it/s, loss=0.066364]
+Epoch 1/100 | Avg Loss: 0.152492
+Epoch 2/100: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████| 91/91 [00:02<00:00, 39.32it/s, loss=0.047069]
+Epoch 2/100 | Avg Loss: 0.115263
+Epoch 3/100: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████| 91/91 [00:01<00:00, 62.92it/s, loss=0.035285]
 ```
 
 ---
