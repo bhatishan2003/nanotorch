@@ -21,20 +21,20 @@ The goal is to **learn**:
 
 - **Optimizers**
     - ✅ Stochastic Gradient Descent (SGD)
-    - ⬜ Adam
-    - ⬜ RMSProp
-    - ⬜ Adagrad
+    - ✅ Adam
+    - ✅ RMSProp
+    - ✅ Adagrad
 
 - **Loss Functions**
     - ✅ Mean Squared Error (MSE) Loss
-    - ⬜ Mean Absolute Error (MAE)
+    - ✅ Mean Absolute Error (MAE)
     - ⬜ Cross-Entropy Loss
     - ⬜ Huber Loss
 
 - **Training Utilities**
     - ⬜ Learning Rate Scheduler
     - ⬜ Gradient Clipping
-    - ⬜ Early Stopping
+    - ✅ Early Stopping
 
 ## 📦 Installation
 
@@ -150,4 +150,8 @@ Epoch 2/100 | Avg Loss: 0.115263
 Epoch 3/100: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████| 91/91 [00:01<00:00, 62.92it/s, loss=0.035285]
 ```
 
----
+### Plot for optimizer comparison
+
+- RNN plot
+    - This plot show comparisons between different optimizer algorithms.
+- ![Plot of Epoch vs Test Loss](rnn_optimizer_comparison.png)
