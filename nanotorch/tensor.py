@@ -74,6 +74,10 @@ class Tensor:
     
     def tanh(self):
         return TanhTensor(self)
+    
+    def sigmoid(self):
+        return SigmoidTensor(self)
+
 
     def abs(self):
         return AbsTensor(self)
@@ -146,8 +150,20 @@ class TanhTensor(Tensor):
 
         self._x.backward(x_grad)
 
+class SigmoidTensor(Tensor):
+    def __init__(self, x):
+        data = 1 / (1 + np.exp(-x.data))
+        super().__init__(data)
+        self._x = x
 
+    def backward(self, grad=None):
+        if grad is None:
+            grad = np.ones_like(self.data)
 
+        x_grad = grad * self.data * (1 - self.data)
+        assert x_grad.shape == self._x.data.shape
+
+        self._x.backward(x_grad)
 class MatMulTensor(Tensor):
     def __init__(self, x, y):
         super().__init__(x.data @ y.data)
@@ -200,7 +216,7 @@ class NegTensor(Tensor):
 
         x_grad = -grad
         assert x_grad.shape == self._x.shape
-        # print("Backward of negative", self.data, x_grad)
+        print("Backward of negative", self.data, x_grad)
         self._x.backward(x_grad)
 
 
@@ -227,7 +243,7 @@ class PowTensor(Tensor):
 
 class AddTensor(Tensor):
     def __init__(self, x, y):
-        assert x.shape() == y.shape()
+       # assert x.shape() == y.shape()
         super().__init__(x.data + y.data)
         self._x = x
         self._y = y
