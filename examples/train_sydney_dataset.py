@@ -1,11 +1,18 @@
+import argparse
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
+import matplotlib.pyplot as plt
 
 from nanotorch.tensor import Tensor
-from nanotorch.nn import LinearLayer, MSELoss, RNNLayer, BaseModel
-from nanotorch.optimizer import SGDOptimizer
-import matplotlib.pyplot as plt
+from nanotorch.nn import LinearLayer, MSELoss, RNNLayer, EarlyStopping, BaseModel
+from nanotorch.optimizer import (
+    SGDOptimizer,
+    SGDMomentumOptimizer,
+    RMSPropOptimizer,
+    AdamOptimizer,
+    AdaGradOptimizer
+)
 
 # -------------------------------
 # Dataset utilities
@@ -13,7 +20,7 @@ import matplotlib.pyplot as plt
 def create_sequences(data, seq_len):
     X, y = [], []
     for i in range(len(data) - seq_len):
-        X.append(data[i : i + seq_len])
+        X.append(data[i:i + seq_len])
         y.append(data[i + seq_len])
     return np.array(X), np.array(y)
 
@@ -30,93 +37,183 @@ class RNNModel(BaseModel):
 
     def forward(self, x):
         batch_size, seq_len, _ = x.shape()
-        hidden_state = Tensor(np.zeros((batch_size, self.hidden_size)))
+        hidden = Tensor(np.zeros((batch_size, self.hidden_size)))
 
         for t in range(seq_len):
-            hidden_state = self.rnn(x[:, t, :], hidden_state)
+            hidden = self.rnn(x[:, t, :], hidden)
 
-        return self.fc(hidden_state)
-# -------------------------------
-# Main
-# -------------------------------
-if __name__ == "__main__":
+        return self.fc(hidden)
 
-    # Load Sydney temperature dataset
-    dataset_url = "https://raw.githubusercontent.com/jbrownlee/Datasets/refs/heads/master/daily-max-temperatures.csv"
-    df = pd.read_csv(dataset_url)
+    def __call__(self, x):
+        return self.forward(x)
+
+
+# -------------------------------
+# Training function (FIXED)
+# -------------------------------
+def train_model(
+    optimizer_name="sgd",
+    lr=1e-3,
+    momentum=0.9,
+    beta=0.9,
+    beta1=0.9,
+    beta2=0.999,
+    eps=1e-8,
+    epochs=100,
+    batch_size=32,
+    hidden_size=64,
+    seq_len=30,
+    early_stopping=False,
+    patience=10,
+    min_delta=1e-4,
+    verbose=True
+):
+    # -------------------------------
+    # Load dataset
+    # -------------------------------
+    url = (
+        "https://raw.githubusercontent.com/jbrownlee/Datasets/"
+        "refs/heads/master/daily-max-temperatures.csv"
+    )
+    df = pd.read_csv(url)
     temps = df["Temperature"].values.reshape(-1, 1)
 
     # Normalize
     temps = (temps - temps.min()) / (temps.max() - temps.min())
 
-    # Hyperparameters
-    seq_len = 30
-    batch_size = 32
-    num_epochs = 100
-    hidden_size = 64
-    lr = 0.001
-
-    # Train / test split
     split = int(len(temps) * 0.8)
     train_data = temps[:split]
-    test_data = temps[split - seq_len :]
 
     X_train, y_train = create_sequences(train_data, seq_len)
-    X_test, y_test = create_sequences(test_data, seq_len)
 
-    # Model, optimizer, loss
-    model = RNNModel(input_size=1, hidden_size=hidden_size, output_size=1)
-    optimizer = SGDOptimizer(model.parameters(), lr=lr)
+    # -------------------------------
+    # Model
+    # -------------------------------
+    model = RNNModel(
+        input_size=1,
+        hidden_size=hidden_size,
+        output_size=1
+    )
+
+    # -------------------------------
+    # Optimizer
+    # -------------------------------
+    if optimizer_name == "sgd":
+        optimizer = SGDOptimizer(model.parameters(), lr=lr)
+
+    elif optimizer_name == "momentum":
+        optimizer = SGDMomentumOptimizer(
+            model.parameters(), lr=lr, momentum=momentum
+        )
+
+    elif optimizer_name == "rmsprop":
+        optimizer = RMSPropOptimizer(
+            model.parameters(), lr=lr, beta=beta, eps=eps
+        )
+
+    elif optimizer_name == "adam":
+        optimizer = AdamOptimizer(
+            model.parameters(), lr=lr, beta1=beta1, beta2=beta2, eps=eps
+        )
+
+    elif optimizer_name == "adagrad":
+        optimizer = AdaGradOptimizer(
+            model.parameters(), lr=lr, eps=eps
+        )
+
+    else:
+        raise ValueError("Unsupported optimizer")
+
     criterion = MSELoss()
 
+    early_stopper = None
+    if early_stopping:
+        early_stopper = EarlyStopping(
+            patience=patience,
+            min_delta=min_delta
+        )
+
     # -------------------------------
-    # Training loop
+    # Training loop (tqdm FIX)
     # -------------------------------
     epoch_losses = []
-    for epoch in range(num_epochs):
+    num_batches = int(np.ceil(len(X_train) / batch_size))
 
+    for epoch in range(epochs):
         epoch_loss = 0.0
-        num_batches = len(X_train) // batch_size
-        if len(X_train) % batch_size != 0:
-            num_batches += 1
 
-        with tqdm(total=num_batches) as pbar:
-            pbar.set_description(f"Epoch {epoch+1}/{num_epochs}")
+        pbar = tqdm(
+            range(num_batches),
+            desc=f"Epoch {epoch+1}/{epochs}",
+            leave=True
+        )
 
-            for batch_i in range(num_batches):
+        for i in pbar:
+            start = i * batch_size
+            end = (i + 1) * batch_size
 
-                batch_x = Tensor(
-                    X_train[batch_i * batch_size : (batch_i + 1) * batch_size]
-                )
-                batch_y = Tensor(
-                    y_train[batch_i * batch_size : (batch_i + 1) * batch_size]
-                )
+            x = Tensor(X_train[start:end])
+            y = Tensor(y_train[start:end])
 
-                # Forward
-                preds = model(batch_x)
-                loss = criterion(batch_y, preds)
+            preds = model(x)
+            loss = criterion(y, preds)
 
-                # Backward
-                optimizer.zero_grad()
-                loss.backward()
-                optimizer.step()
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
 
-                epoch_loss += loss.data
-                pbar.update(1)
-                pbar.set_postfix(loss=f"{loss.data:.6f}")
+            epoch_loss += loss.data
+            pbar.set_postfix(loss=f"{loss.data:.6f}")
 
-        epoch_loss /= num_batches
-        epoch_losses.append(epoch_loss)
-        print(f"Epoch {epoch+1}/{num_epochs} | Avg Loss: {epoch_loss:.6f}")
+        avg_loss = epoch_loss / num_batches
+        epoch_losses.append(avg_loss)
+
+        print(f"Epoch {epoch+1}/{epochs} | Avg Loss: {avg_loss:.6f}")
+
+        if early_stopper and early_stopper(avg_loss):
+            print("Early stopping triggered")
+            break
+
+    return epoch_losses
 
 
-    for category_name, category_data in [("Train", epoch_losses)]:
-        plt.figure(figsize=(8, 5))
-        plt.plot(category_data, label="RNN model")
-        plt.xlabel("Epoch")
-        plt.ylabel("MSE Loss")
-        plt.title(category_name + " Loss Comparison")
-        plt.legend()
-        plt.grid(True)
-        plt.savefig(category_name.lower() + "_loss_comparison.png")
-        plt.close()
+# -------------------------------
+# Main (CLI)
+# -------------------------------
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Nanotorch RNN Trainer")
+
+    parser.add_argument("--optimizer", type=str, default="sgd",
+                        choices=["sgd", "momentum", "rmsprop", "adam", "adagrad"])
+    parser.add_argument("--lr", type=float, default=1e-3)
+    parser.add_argument("--momentum", type=float, default=0.9)
+    parser.add_argument("--beta", type=float, default=0.9)
+    parser.add_argument("--beta1", type=float, default=0.9)
+    parser.add_argument("--beta2", type=float, default=0.999)
+    parser.add_argument("--eps", type=float, default=1e-8)
+    parser.add_argument("--epochs", type=int, default=100)
+    parser.add_argument("--batch_size", type=int, default=32)
+    parser.add_argument("--hidden_size", type=int, default=64)
+    parser.add_argument("--seq_len", type=int, default=30)
+    parser.add_argument("--early_stopping", action="store_true")
+    parser.add_argument("--patience", type=int, default=10)
+    parser.add_argument("--min_delta", type=float, default=1e-4)
+
+    args = parser.parse_args()
+
+    epoch_losses = train_model(
+        optimizer_name=args.optimizer,
+        lr=args.lr,
+        momentum=args.momentum,
+        beta=args.beta,
+        beta1=args.beta1,
+        beta2=args.beta2,
+        eps=args.eps,
+        epochs=args.epochs,
+        batch_size=args.batch_size,
+        hidden_size=args.hidden_size,
+        seq_len=args.seq_len,
+        early_stopping=args.early_stopping,
+        patience=args.patience,
+        min_delta=args.min_delta
+    )
