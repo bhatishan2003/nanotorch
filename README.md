@@ -155,4 +155,4 @@ Epoch 3/100: 100%|████████████████████�
 - RNN plot
     - This plot show comparisons between different optimizer algorithms.
 
-    ![Plot of comparing optimizers](rnn_optimizer_comparison.png)
+    ![Plot of comparing optimizers](assets/rnn_optimizer_comparison.png)
