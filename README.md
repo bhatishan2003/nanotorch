@@ -10,7 +10,6 @@ The goal is to **learn**:
 - How frameworks like PyTorch work internally
 
 [![CI (Optimizer Tests)](https://github.com/bhatishan2003/nanotorch/actions/workflows/test.yml/badge.svg)](https://github.com/bhatishan2003/nanotorch/actions/workflows/test.yml)
-[![Coverage](https://codecov.io/gh/bhatishan2003/nanotorch/branch/main/graph/badge.svg)](https://codecov.io/gh/bhatishan2003/nanotorch)
 
 ## Features
 
@@ -44,7 +43,7 @@ The goal is to **learn**:
 Clone the repository and install locally:
 
 ```bash
-git clone https://github.com/your-username/nanotorch.git
+git clone https://github.com/bhatishan2003/nanotorch.git
 cd nanotorch
 pip install -e .
 ```
@@ -156,6 +155,6 @@ Epoch 3/100: 100%|████████████████████�
 ### Plot for optimizer comparison
 
 - RNN plot
-    - This plot show comparisons between different optimizer algorithms.
+    - This plot show comparison between different optimizer algorithms.
 
     ![Plot of comparing optimizers](assets/rnn_optimizer_comparison.png)
