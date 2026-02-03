@@ -47,10 +47,8 @@ class RNNModel(BaseModel):
     def __call__(self, x):
         return self.forward(x)
 
+# Training function 
 
-# -------------------------------
-# Training function (FIXED)
-# -------------------------------
 def train_model(
     optimizer_name="sgd",
     lr=1e-3,
@@ -85,19 +83,13 @@ def train_model(
     train_data = temps[:split]
 
     X_train, y_train = create_sequences(train_data, seq_len)
-
-    # -------------------------------
     # Model
-    # -------------------------------
     model = RNNModel(
         input_size=1,
         hidden_size=hidden_size,
         output_size=1
     )
-
-    # -------------------------------
     # Optimizer
-    # -------------------------------
     if optimizer_name == "sgd":
         optimizer = SGDOptimizer(model.parameters(), lr=lr)
 
@@ -176,10 +168,8 @@ def train_model(
 
     return epoch_losses
 
-
-# -------------------------------
 # Main (CLI)
-# -------------------------------
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Nanotorch RNN Trainer")
 
