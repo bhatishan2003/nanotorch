@@ -9,6 +9,9 @@ The goal is to **learn**:
 - How neural networks are built from scratch
 - How frameworks like PyTorch work internally
 
+[![CI (Optimizer Tests)](https://github.com/bhatishan2003/nanotorch/actions/workflows/test.yml/badge.svg)](https://github.com/bhatishan2003/nanotorch/actions/workflows/test.yml)
+[![Coverage](https://codecov.io/gh/bhatishan2003/nanotorch/branch/main/graph/badge.svg)](https://codecov.io/gh/bhatishan2003/nanotorch)
+
 ## Features
 
 - **Layers**
