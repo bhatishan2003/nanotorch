@@ -130,6 +130,59 @@ class RNNLayer(BaseLayer):
             out_1[i] = out_1[i] + self.bias_x
             out_2[i] = out_2[i] + self.bias_h
         return (out_1 + out_2).tanh()
+    
+
+
+class Conv2DLayer(BaseLayer):
+    """
+    2D Convolution Layer (with stride)
+    Input:  (B, C_in, H, W)
+    Output: (B, C_out, H_out, W_out)
+    """
+
+    def __init__(self, in_channels, out_channels, kernel_size, stride=1):
+        super().__init__()
+
+        if isinstance(kernel_size, int):
+            kernel_size = (kernel_size, kernel_size)
+
+        self.in_channels = in_channels
+        self.out_channels = out_channels
+        self.kernel_size = kernel_size
+        self.stride = stride
+
+        kh, kw = kernel_size
+
+        self.weight = Tensor(
+            np.random.randn(out_channels, in_channels, kh, kw) * 0.01
+        )
+        self.bias = Tensor(np.zeros(out_channels))
+
+    def forward(self, x):
+        B, C, H, W = x.shape()
+        kh, kw = self.kernel_size
+        s = self.stride
+
+        H_out = (H - kh) // s + 1
+        W_out = (W - kw) // s + 1
+
+        out = np.zeros((B, self.out_channels, H_out, W_out))
+
+        x_np = x.data
+        w_np = self.weight.data
+        b_np = self.bias.data
+
+        for b in range(B):
+            for oc in range(self.out_channels):
+                for i in range(H_out):
+                    for j in range(W_out):
+                        h_start = i * s
+                        w_start = j * s
+                        region = x_np[b, :, h_start:h_start+kh, w_start:w_start+kw]
+                        out[b, oc, i, j] = np.sum(region * w_np[oc]) + b_np[oc]
+
+        return Tensor(out)
+
 class BaseModel(ABC):
     def __init__(self):
         super().__init__()
