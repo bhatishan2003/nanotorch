@@ -18,7 +18,7 @@ The goal is to **learn**:
     - ✅ Vanilla Recurrent (RNN) Layer
     - ⬜ LSTM Layer
     - ⬜ GRU Layer
-    - ⬜ Convolutional (CNN) Layer
+    - ✅ Convolutional (CNN) Layer
     - ⬜ Transformer-based Layer
 
 - **Optimizers**
